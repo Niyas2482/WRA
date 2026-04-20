@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaRisk IMS — Intelligent Water Risk Assessment</title>
+    <meta name="description" content="Intelligent Risk Assessment Models for Water Remediation Based on Contaminant Transport and Exposure Analysis">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- App CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-water"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>AquaRisk</h1>
+                    <span>IMS Platform</span>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <ul>
+                <li class="nav-item active" data-page="dashboard">
+                    <a href="#dashboard">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="sites">
+                    <a href="#sites">
+                        <i class="fas fa-map-marked-alt"></i>
+                        <span>Site Management</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="contaminants">
+                    <a href="#contaminants">
+                        <i class="fas fa-flask"></i>
+                        <span>Contaminant Database</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="transport">
+                    <a href="#transport">
+                        <i class="fas fa-wave-square"></i>
+                        <span>Transport Modeling</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="exposure">
+                    <a href="#exposure">
+                        <i class="fas fa-lungs"></i>
+                        <span>Exposure Analysis</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="risk">
+                    <a href="#risk">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>Risk Assessment</span>
+                    </a>
+                </li>
+                <li class="nav-item" data-page="reports">
+                    <a href="#reports">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Reports</span>
+                    </a>
+                </li>
+            </ul>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="system-status">
+                <div class="status-dot online"></div>
+                <span>System Online</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Top Bar -->
+        <header class="topbar">
+            <div class="topbar-left">
+                <button class="menu-toggle" id="menuToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="breadcrumb">
+                    <span id="currentPageTitle">Dashboard</span>
+                </div>
+            </div>
+            <div class="topbar-right">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search..." id="globalSearch">
+                </div>
+                <div class="topbar-actions">
+                    <button class="action-btn" id="notificationBtn" title="Notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="badge" id="notifBadge">3</span>
+                    </button>
+                    <button class="action-btn" id="refreshBtn" title="Refresh Data">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <span>Admin</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Page Container -->
+        <div class="page-container">
+            <!-- Dashboard Page -->
+            <section class="page active" id="page-dashboard">
+                <div class="page-header">
+                    <h2>Risk Assessment Dashboard</h2>
+                    <p>Real-time overview of water contamination monitoring and risk assessment status</p>
+                </div>
+                
+                <!-- KPI Cards -->
+                <div class="kpi-grid" id="kpiGrid">
+                    <div class="kpi-card" data-color="blue">
+                        <div class="kpi-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Active Sites</span>
+                            <span class="kpi-value" id="kpiActiveSites">0</span>
+                        </div>
+                        <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> 12%</div>
+                    </div>
+                    <div class="kpi-card" data-color="cyan">
+                        <div class="kpi-icon"><i class="fas fa-vials"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Total Samples</span>
+                            <span class="kpi-value" id="kpiTotalSamples">0</span>
+                        </div>
+                        <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> 8%</div>
+                    </div>
+                    <div class="kpi-card" data-color="red">
+                        <div class="kpi-icon"><i class="fas fa-exclamation-circle"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">MCL Exceedances</span>
+                            <span class="kpi-value" id="kpiExceedances">0</span>
+                        </div>
+                        <div class="kpi-trend down"><i class="fas fa-arrow-down"></i> 5%</div>
+                    </div>
+                    <div class="kpi-card" data-color="orange">
+                        <div class="kpi-icon"><i class="fas fa-shield-alt"></i></div>
+                        <div class="kpi-info">
+                            <span class="kpi-label">Assessments</span>
+                            <span class="kpi-value" id="kpiAssessments">0</span>
+                        </div>
+                        <div class="kpi-trend up"><i class="fas fa-arrow-up"></i> 15%</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="charts-row">
+                    <div class="chart-card wide">
+                        <div class="chart-header">
+                            <h3>Risk Distribution Overview</h3>
+                            <div class="chart-actions">
+                                <button class="chart-btn active">Bar</button>
+                                <button class="chart-btn">Pie</button>
+                            </div>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="riskDistChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3>Contaminant Categories</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Map + Table Row -->
+                <div class="charts-row">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-map"></i> Monitoring Site Locations</h3>
+                        </div>
+                        <div class="chart-body map-container">
+                            <div id="dashboardMap" style="height: 350px; border-radius: 12px;"></div>
+                        </div>
+                    </div>
+                    <div class="chart-card wide">
+                        <div class="chart-header">
+                            <h3>Sample Collection Trends</h3>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="trendsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Assessments Table -->
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3>Recent Risk Assessments</h3>
+                        <button class="btn btn-sm" onclick="navigateTo('risk')">View All <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="data-table" id="recentAssessmentsTable">
+                            <thead>
+                                <tr>
+                                    <th>Assessment</th>
+                                    <th>Site</th>
+                                    <th>Pathway</th>
+                                    <th>Hazard Index</th>
+                                    <th>Cancer Risk</th>
+                                    <th>Risk Level</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recentAssessmentsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sites Page -->
+            <section class="page" id="page-sites">
+                <div class="page-header">
+                    <h2>Site Management</h2>
+                    <p>Manage contamination monitoring sites and their characteristics</p>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="openSiteModal()">
+                            <i class="fas fa-plus"></i> Add New Site
+                        </button>
+                    </div>
+                </div>
+                <div id="sitesMapContainer" style="height:350px; border-radius:12px; margin-bottom:24px; overflow:hidden;"></div>
+                <div class="sites-grid" id="sitesGrid"></div>
+            </section>
+
+            <!-- Contaminants Page -->
+            <section class="page" id="page-contaminants">
+                <div class="page-header">
+                    <h2>Contaminant Database</h2>
+                    <p>EPA-regulated contaminants with toxicity and chemical properties</p>
+                    <div class="page-actions">
+                        <div class="filter-group">
+                            <select id="contaminantFilter" class="select-input">
+                                <option value="">All Categories</option>
+                                <option value="Heavy Metal">Heavy Metals</option>
+                                <option value="VOC">VOCs</option>
+                                <option value="Inorganic">Inorganic</option>
+                                <option value="Pesticide">Pesticide</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary" onclick="openContaminantModal()">
+                            <i class="fas fa-plus"></i> Add Contaminant
+                        </button>
+                    </div>
+                </div>
+                <div class="table-card">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="contaminantsTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>CAS #</th>
+                                    <th>Category</th>
+                                    <th>MCL (mg/L)</th>
+                                    <th>RfD (mg/kg/day)</th>
+                                    <th>CSF</th>
+                                    <th>Carcinogen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contaminantsBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Transport Modeling Page -->
+            <section class="page" id="page-transport">
+                <div class="page-header">
+                    <h2>Contaminant Transport Modeling</h2>
+                    <p>1D Advection-Dispersion equation solver with real-time plume visualization</p>
+                </div>
+                <div class="transport-layout">
+                    <div class="transport-controls card-glass">
+                        <h3><i class="fas fa-sliders-h"></i> Model Parameters</h3>
+                        <div class="control-group">
+                            <label>Source Concentration (mg/L)</label>
+                            <input type="range" id="srcConc" min="1" max="500" value="100" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="srcConcVal">100</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Groundwater Velocity (m/day)</label>
+                            <input type="range" id="gwVelocity" min="0.01" max="10" value="1" step="0.01" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="gwVelocityVal">1</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Dispersion Coefficient (m²/day)</label>
+                            <input type="range" id="dispCoeff" min="0.01" max="50" value="5" step="0.01" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="dispCoeffVal">5</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Retardation Factor</label>
+                            <input type="range" id="retardation" min="1" max="20" value="1" step="0.1" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="retardationVal">1</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Decay Rate (1/day)</label>
+                            <input type="range" id="decayRate" min="0" max="0.5" value="0" step="0.001" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="decayRateVal">0</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Simulation Time (days)</label>
+                            <input type="range" id="simTime" min="1" max="365" value="30" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="simTimeVal">30</span>
+                        </div>
+                        <div class="control-group">
+                            <label>Max Distance (m)</label>
+                            <input type="range" id="maxDist" min="10" max="500" value="100" oninput="updateTransportLabel(this)">
+                            <span class="range-value" id="maxDistVal">100</span>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="runTransportSimulation()">
+                            <i class="fas fa-play"></i> Run Simulation
+                        </button>
+                    </div>
+                    <div class="transport-results">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>Concentration vs Distance Profile</h3>
+                            </div>
+                            <div class="chart-body">
+                                <canvas id="spatialChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>Breakthrough Curve (Time Series)</h3>
+                            </div>
+                            <div class="chart-body">
+                                <canvas id="breakthroughChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h3>2D Contaminant Plume</h3>
+                            </div>
+                            <div class="chart-body">
+                                <canvas id="plumeCanvas" width="600" height="400"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Exposure Analysis Page -->
+            <section class="page" id="page-exposure">
+                <div class="page-header">
+                    <h2>Exposure Pathway Analysis</h2>
+                    <p>Multi-route exposure dose calculations using EPA standard parameters</p>
+                </div>
+                <div class="exposure-layout">
+                    <div class="exposure-controls card-glass">
+                        <h3><i class="fas fa-cogs"></i> Exposure Parameters</h3>
+                        <div class="control-group">
+                            <label>Contaminant</label>
+                            <select id="expContaminant" class="select-input"></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Concentration (mg/L)</label>
+                            <input type="number" id="expConcentration" class="text-input" value="0.05" step="0.001" min="0">
+                        </div>
+                        <div class="control-group">
+                            <label>Receptor Type</label>
+                            <select id="expReceptor" class="select-input">
+                                <option value="adult">Adult Resident</option>
+                                <option value="child">Child (1-6 years)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label>Exposure Pathways</label>
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pathIngestion" checked> 
+                                    <span><i class="fas fa-glass-water"></i> Ingestion</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pathDermal" checked>
+                                    <span><i class="fas fa-hand-holding-water"></i> Dermal Contact</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="pathInhalation" checked>
+                                    <span><i class="fas fa-lungs"></i> Inhalation</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="runExposureAnalysis()">
+                            <i class="fas fa-calculator"></i> Calculate Exposure
+                        </button>
+                    </div>
+                    <div class="exposure-results">
+                        <div class="exposure-summary" id="exposureSummary" style="display:none;">
+                            <div class="risk-indicator" id="exposureRiskIndicator">
+                                <div class="risk-gauge" id="riskGauge">
+                                    <div class="gauge-fill" id="gaugeFill"></div>
+                                    <div class="gauge-label" id="gaugeLabel">--</div>
+                                </div>
+                                <div class="risk-details">
+                                    <h3 id="overallRiskLevel">--</h3>
+                                    <p id="overallHI">Hazard Index: --</p>
+                                    <p id="overallCR">Cancer Risk: --</p>
+                                    <p id="remediationFlag">--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="pathway-cards" id="pathwayCards"></div>
+                        <div class="chart-card" id="exposureChartCard" style="display:none;">
+                            <div class="chart-header"><h3>Pathway Contribution Analysis</h3></div>
+                            <div class="chart-body">
+                                <canvas id="exposureChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Risk Assessment Page -->
+            <section class="page" id="page-risk">
+                <div class="page-header">
+                    <h2>Risk Assessment Engine</h2>
+                    <p>Comprehensive risk evaluation using Hazard Quotient and Incremental Cancer Risk methods</p>
+                </div>
+                <div class="risk-layout">
+                    <div class="risk-controls card-glass">
+                        <h3><i class="fas fa-shield-alt"></i> Run Assessment</h3>
+                        <div class="control-group">
+                            <label>Select Site</label>
+                            <select id="riskSiteSelect" class="select-input"></select>
+                        </div>
+                        <div class="control-group">
+                            <label>Assessment Name</label>
+                            <input type="text" id="riskAssessmentName" class="text-input" placeholder="Enter assessment name">
+                        </div>
+                        <div class="control-group">
+                            <label>Receptor</label>
+                            <select id="riskReceptor" class="select-input">
+                                <option value="Adult Resident">Adult Resident</option>
+                                <option value="Child">Child</option>
+                                <option value="Industrial Worker">Industrial Worker</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-primary btn-block" onclick="runRiskAssessment()">
+                            <i class="fas fa-play-circle"></i> Run Assessment
+                        </button>
+                    </div>
+                    <div class="risk-results">
+                        <div id="riskResultsContainer" style="display:none;">
+                            <div class="risk-summary-card" id="riskSummaryCard"></div>
+                            <div class="chart-card">
+                                <div class="chart-header"><h3>Risk Matrix</h3></div>
+                                <div class="chart-body">
+                                    <canvas id="riskMatrixChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-card">
+                            <div class="table-header">
+                                <h3>Assessment History</h3>
+                            </div>
+                            <div class="table-wrapper">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Assessment</th>
+                                            <th>Site</th>
+                                            <th>Pathway</th>
+                                            <th>HQ</th>
+                                            <th>Cancer Risk</th>
+                                            <th>Level</th>
+                                            <th>Date</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="assessmentHistoryBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reports Page -->
+            <section class="page" id="page-reports">
+                <div class="page-header">
+                    <h2>Reports & Analytics</h2>
+                    <p>Generate comprehensive reports and export data for regulatory compliance</p>
+                </div>
+                <div class="reports-grid">
+                    <div class="report-card" onclick="generateReport('site_summary')">
+                        <div class="report-icon"><i class="fas fa-map-marked-alt"></i></div>
+                        <h3>Site Summary Report</h3>
+                        <p>Comprehensive overview of all monitoring sites with status and risk levels</p>
+                        <span class="report-badge">PDF Ready</span>
+                    </div>
+                    <div class="report-card" onclick="generateReport('contaminant_analysis')">
+                        <div class="report-icon"><i class="fas fa-flask"></i></div>
+                        <h3>Contaminant Analysis</h3>
+                        <p>Detailed analysis of contaminant levels vs regulatory limits</p>
+                        <span class="report-badge">Excel Ready</span>
+                    </div>
+                    <div class="report-card" onclick="generateReport('risk_assessment')">
+                        <div class="report-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <h3>Risk Assessment Report</h3>
+                        <p>Full risk assessment results with hazard quotients and cancer risk</p>
+                        <span class="report-badge">PDF Ready</span>
+                    </div>
+                    <div class="report-card" onclick="generateReport('transport_model')">
+                        <div class="report-icon"><i class="fas fa-wave-square"></i></div>
+                        <h3>Transport Model Report</h3>
+                        <p>Contaminant transport simulation results and plume analysis</p>
+                        <span class="report-badge">PDF Ready</span>
+                    </div>
+                    <div class="report-card" onclick="generateReport('regulatory_compliance')">
+                        <div class="report-icon"><i class="fas fa-balance-scale"></i></div>
+                        <h3>Regulatory Compliance</h3>
+                        <p>MCL exceedance tracking and compliance status for all sites</p>
+                        <span class="report-badge">Excel Ready</span>
+                    </div>
+                    <div class="report-card" onclick="generateReport('remediation_recs')">
+                        <div class="report-icon"><i class="fas fa-tools"></i></div>
+                        <h3>Remediation Recommendations</h3>
+                        <p>Technology recommendations based on contaminant type and risk level</p>
+                        <span class="report-badge">PDF Ready</span>
+                    </div>
+                </div>
+                <div id="reportOutput" class="report-output" style="display:none;">
+                    <div class="report-output-header">
+                        <h3 id="reportTitle"></h3>
+                        <div>
+                            <button class="btn btn-sm" onclick="printReport()"><i class="fas fa-print"></i> Print</button>
+                            <button class="btn btn-sm" onclick="closeReport()"><i class="fas fa-times"></i> Close</button>
+                        </div>
+                    </div>
+                    <div id="reportContent" class="report-content"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal" id="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Add New</h3>
+                <button class="modal-close" onclick="closeModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-primary" id="modalSaveBtn" onclick="saveModalData()">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner-ring"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/contaminants.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/transport.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/exposure.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/risk.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/sites.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reports.js') }}"></script>
+</body>
+</html>
